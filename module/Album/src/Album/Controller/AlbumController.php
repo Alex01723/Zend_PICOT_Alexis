@@ -7,29 +7,19 @@ use Zend\View\Model\ViewModel;
 use Album\Model\Album;
 use Album\Form\AlbumForm;
 
-class AlbumController extends AbstractActionController
-{
+class AlbumController extends AbstractActionController {
 
     protected $albumTable;
+    protected $authservice;
 
-    public function indexAction()
-    {
+    public function indexAction() {
+        $user = $this->getAuthService()->getStorage()->read();
         return new ViewModel(array(
-            'albums' => $this->getAlbumTable()->fetchAll(),
+            'albums' => $this->getAlbumTable()->findAlbumByIdUser($user->id),
         ));
     }
 
-    public function getAlbumTable()
-    {
-        if (!$this->albumTable) {
-            $sm = $this->getServiceLocator();
-            $this->albumTable = $sm->get('Album\Model\AlbumTable');
-        }
-        return $this->albumTable;
-    }
-
-    public function addAction()
-    {
+    public function addAction() {
         $form = new AlbumForm();
         $form->get('submit')->setValue('Add');
 
@@ -50,13 +40,12 @@ class AlbumController extends AbstractActionController
         return array('form' => $form);
     }
 
-    public function editAction()
-    {
+    public function editAction() {
 
-        $id = (int)$this->params()->fromRoute('id', 0);
+        $id = (int) $this->params()->fromRoute('id', 0);
         if (!$id) {
             return $this->redirect()->toRoute('album', array(
-                'action' => 'add'
+                        'action' => 'add'
             ));
         }
 
@@ -66,7 +55,7 @@ class AlbumController extends AbstractActionController
             $album = $this->getAlbumTable()->getAlbum($id);
         } catch (\Exception $ex) {
             return $this->redirect()->toRoute('album', array(
-                'action' => 'index'
+                        'action' => 'index'
             ));
         }
 
@@ -93,9 +82,8 @@ class AlbumController extends AbstractActionController
         );
     }
 
-    public function deleteAction()
-    {
-        $id = (int)$this->params()->fromRoute('id', 0);
+    public function deleteAction() {
+        $id = (int) $this->params()->fromRoute('id', 0);
         if (!$id) {
             return $this->redirect()->toRoute('album');
         }
@@ -105,7 +93,7 @@ class AlbumController extends AbstractActionController
             $del = $request->getPost('del', 'No');
 
             if ($del == 'Yes') {
-                $id = (int)$request->getPost('id');
+                $id = (int) $request->getPost('id');
                 $this->getAlbumTable()->deleteAlbum($id);
             }
 
@@ -117,6 +105,23 @@ class AlbumController extends AbstractActionController
             'id' => $id,
             'album' => $this->getAlbumTable()->getAlbum($id)
         );
+    }
+
+    public function getAlbumTable() {
+        if (!$this->albumTable) {
+            $sm = $this->getServiceLocator();
+            $this->albumTable = $sm->get('Album\Model\AlbumTable');
+        }
+        return $this->albumTable;
+    }
+    
+    public function getAuthService() {
+        if (!$this->authservice) {
+            $this->authservice = $this->getServiceLocator()
+                    ->get('AuthService');
+        }
+
+        return $this->authservice;
     }
 
 }
